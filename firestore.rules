@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // V vsakem računu so podatki o poroki zasebni; drugi uporabniki nimajo dostopa.
+    match /users/{userId}/weddings/{weddingId} {
+      allow read: if request.auth != null
+        && request.auth.uid == userId && weddingId == 'main';
+      allow create, update: if request.auth != null
+        && request.auth.uid == userId && weddingId == 'main'
+        && request.resource.data.keys().hasOnly(['plan', 'updatedAt'])
+        && request.resource.data.plan is map;
+      allow delete: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

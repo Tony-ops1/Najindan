@@ -1,0 +1,9 @@
+# Ne objavljaj osebnih podatkov ali varnostnih kopij poroke
+*.backup.json
+*osebni*.json
+*zasebni*.json
+/private/
+/backups/
+/.env
+.env.*
+.DS_Store

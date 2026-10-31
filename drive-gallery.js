@@ -224,6 +224,63 @@
       busy = false; await load(true);
     } catch (error) { busy = false; status = message(error); paint(); }
   }
+  // Optional single-consent login: this must run directly from a user click,
+  // and must use the same Drive OAuth app as existing pictures.
+  function requestLoginToken() {
+    return new Promise((resolve, reject) => {
+      if (!window.google?.accounts?.oauth2) {
+        reject(new Error('Google prijavna knjižnica se še nalaga. Osveži stran.'));
+        return;
+      }
+      let settled = false;
+      const ok = value => { if (!settled) { settled = true; resolve(value); } };
+      const fail = message => { if (!settled) { settled = true; reject(new Error(message)); } };
+      const client = window.google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: 'openid email profile https://www.googleapis.com/auth/drive.file',
+        callback: response => {
+          if (response.error || !response.access_token) {
+            fail('Google ni izdal dovoljenja za Google Drive.'); return;
+          }
+          const scopes = String(response.scope || '').split(/\s+/);
+          if (!scopes.includes('https://www.googleapis.com/auth/drive.file')) {
+            fail('Za fotografije mora biti potrjeno tudi dovoljenje Google Drive.'); return;
+          }
+          ok(response);
+        },
+        error_callback: () => fail('Googlovo prijavno okno ni bilo dokončano.')
+      });
+      // A remembered consent flag contains no token or personal account data.
+      let previouslyApproved = false;
+      try { previouslyApproved = localStorage.getItem('najindan-drive-previous-consent') === '1'; } catch (_) {}
+      try { client.requestAccessToken({ prompt: previouslyApproved ? '' : 'consent' }); }
+      catch (_) { fail('Googlove prijave ni mogoče odpreti.'); }
+    });
+  }
+  async function adoptLoginToken(signedInUser, response) {
+    if (!signedInUser || !response?.access_token) return false;
+    const expectedId = signedInUser.providerData?.find(x => x.providerId === 'google.com')?.uid;
+    if (!expectedId) return false;
+    const identity = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
+      headers: { Authorization: 'Bearer ' + response.access_token }
+    });
+    if (!identity.ok) throw new Error('Povezanega Googlovega računa ni mogoče preveriti.');
+    const profile = await identity.json();
+    if (profile.sub !== expectedId) {
+      throw new Error('Račun Google Drive se ne ujema z računom NajinDan.');
+    }
+    // Never persist short-lived Google access tokens in localStorage or Firestore.
+    if (user && user.uid !== signedInUser.uid) signOut();
+    try { localStorage.setItem('najindan-drive-previous-consent', '1'); } catch (_) {}
+    token = response.access_token;
+    validUntil = Date.now() + Math.max(60, Number(response.expires_in) || 3600) * 1000;
+    folderId = ''; photos = []; nextPage = '';
+    if (root?.isConnected) {
+      user = signedInUser;
+      await load(true);
+    }
+    return true;
+  }
   function connect() {
     if (busy || !user) return;
     if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
@@ -294,5 +351,5 @@
     paint();
     if (ready()) load(true);
   }
-  window.NAJINDAN_DRIVE_GALLERY = { mount, unmount, signOut };
+  window.NAJINDAN_DRIVE_GALLERY = { mount, unmount, signOut, requestLoginToken, adoptLoginToken };
 })();

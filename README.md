@@ -17,6 +17,13 @@ Spletna aplikacija za načrtovanje poroke v slovenščini. Deluje v brskalniku t
 
 ## Google Drive fotografije
 
+### Dve ločeni možnosti na prijavnem zaslonu
+
+Na začetni strani sta gumba **Prijava z Googlom** in **Poveži Google Drive**. Obstoječa Firebase prijava in galerija znotraj aplikacije ostaneta nespremenjeni. Uporabnik lahko najprej klikne **Poveži Google Drive** in odobri dostop do fotografij; nato klikne **Prijava z Googlom** z **istim Google računom**. Aplikacija po prijavi preveri Google račun ter poveže prej pridobljeno dovoljenje z uporabniško galerijo. Če uporabnik Drive ne želi povezati, lahko takoj izbere samo običajno Google prijavo in Drive poveže pozneje v razdelku Fotografije oziroma pri urejanju kategorije.
+
+Dovoljenje za Drive se pridobi samo po uporabnikovem kliku. Dostopni žeton ostane izključno v pomnilniku brskalnika in se ne shranjuje trajno; po poteku, ponovnem odpiranju strani ali menjavi naprave bo povezavo morda treba ponoviti. Če se uporabnika ne ujemata, povezava z Drive ni dovoljena. Google Cloud OAuth aplikacija v načinu Testing še vedno omejuje dovoljenja Drive na registrirane testne uporabnike.
+
+
 ### Ena prijava za Firebase in Google Drive (pripravljeno; še ni aktivirano)
 
 Aplikacija vsebuje opcijsko **združeno prijavo**, pri kateri uporabnik pritisne **Prijava z Googlom in Drive** in v istem Google OAuth postopku odobri obseg `drive.file`. Isti OAuth žeton se nato uporabi za prijavo v Firebase (`signInWithCredential`) in povezavo uporabnikove galerije. Ker gre za isti Google OAuth klient **NajinDan Drive**, ostanejo slike povezane z istim Google Drive odjemalcem. Dovoljenje za Drive mora uporabnik prvič izrecno potrditi. Žeton za Drive ni trajen in je samo v pomnilniku, zato po osvežitvi/brskalnikovi obnovi prijave v Firebase ni vedno samodejno na voljo — novo Google dovoljenje je treba obnoviti z uporabniškim klikom.

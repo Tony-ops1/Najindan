@@ -8,6 +8,7 @@
   let root = null, user = null, token = '', validUntil = 0, folderId = '';
   let photos = [], nextPage = '', status = '', busy = false, generation = 0;
   let category = null; // Only the selected wedding category, never shared between accounts.
+  let pendingWelcomeToken = null; // Short-lived Drive grant from the initial sign-in screen.
   const previews = new Map();
   const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({
     '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
@@ -257,6 +258,18 @@
       catch (_) { fail('Googlove prijave ni mogoče odpreti.'); }
     });
   }
+  async function prepareBeforeLogin() {
+    // The browser must start Google OAuth directly from the user's button press.
+    const response = await requestLoginToken();
+    pendingWelcomeToken = response;
+    return true;
+  }
+  async function adoptPendingLoginToken(signedInUser) {
+    const response = pendingWelcomeToken;
+    pendingWelcomeToken = null; // Never retry or reuse an unverified grant for another login.
+    if (!response) return false;
+    return adoptLoginToken(signedInUser, response);
+  }
   async function adoptLoginToken(signedInUser, response) {
     if (!signedInUser || !response?.access_token) return false;
     const expectedId = signedInUser.providerData?.find(x => x.providerId === 'google.com')?.uid;
@@ -317,7 +330,7 @@
     client.requestAccessToken({ prompt: 'consent' });
   }
   function signOut() {
-    generation++; closePreviews();
+    generation++; closePreviews(); pendingWelcomeToken = null;
     token = ''; validUntil = 0; folderId = ''; photos = []; nextPage = '';
     user = null; root = null; category = null; busy = false; status = '';
   }
@@ -351,5 +364,5 @@
     paint();
     if (ready()) load(true);
   }
-  window.NAJINDAN_DRIVE_GALLERY = { mount, unmount, signOut, requestLoginToken, adoptLoginToken };
+  window.NAJINDAN_DRIVE_GALLERY = { mount, unmount, signOut, requestLoginToken, adoptLoginToken, prepareBeforeLogin, adoptPendingLoginToken };
 })();

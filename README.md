@@ -5,7 +5,7 @@ Spletna aplikacija za načrtovanje poroke v slovenščini. Deluje v brskalniku t
 ## Funkcije
 
 - Pregled poroke, datum in opravljene naloge
-- Prilagodljivi zaznamki in kategorije (dodaj, preimenuj, razvrsti)
+- Prilagodljivi zaznamki in kategorije (dodaj, preimenuj, razvrsti; pri ustvarjanju in urejanju kategorij je na voljo vizualna izbira 138 ikon, razdeljenih v 9 poročnih skupin)
 - Seznam gostov in potrditve udeležbe
 - **Sedežni red:** dodaj mize, določi število sedežev, razporedi goste, premikaj med mizami
 - Proračun, stroški in plačila

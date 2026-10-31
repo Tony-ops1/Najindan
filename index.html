@@ -116,6 +116,7 @@ body.auth-locked .shell{display:none!important}
     <h2>Vajin dan, vajin načrt.</h2>
     <p>Prijavi se z Google računom. Tvoj poročni načrt je zaseben in se shrani v oblak, da ga lahko obnoviš tudi na drugem telefonu.</p>
     <button type="button" class="btn auth-login" id="googleLogin" disabled>Prijava z Googlom</button>
+    <button type="button" class="btn secondary auth-login" id="googleLoginWithoutDrive" hidden>Prijava brez fotografij</button>
     <p class="auth-status" id="authStatus" role="status">Pripravljam varno prijavo …</p>
     <p class="auth-privacy">NajinDan ne vidi tvojega gesla. Vsak račun ima ločene podatke.</p><p class="auth-privacy"><a href="./o-aplikaciji.html">O aplikaciji</a> · <a href="./politika-zasebnosti.html">Zasebnost</a> · <a href="./pogoji-uporabe.html">Pogoji uporabe</a></p>
   </div>
@@ -227,12 +228,29 @@ async function startUserSignIn(){
       }
     });
     const loginButton=document.getElementById('googleLogin');
+    const basicLoginButton=document.getElementById('googleLoginWithoutDrive');
+    const unified=window.NAJINDAN_FIREBASE_CONFIG?.unifiedGoogleDriveLogin===true;
     loginButton.disabled=false;
+    if(unified){
+      loginButton.textContent='Prijava z Googlom in Drive';
+      basicLoginButton.hidden=false;
+      basicLoginButton.addEventListener('click',async()=>{
+        loginButton.disabled=true;
+        basicLoginButton.disabled=true;
+        try{await cloudController.loginWithoutDrive()}catch(err){
+          showLoginGate('Prijava ni uspela. Preveri povezavo in dovoljenje Firebase.');
+        }finally{loginButton.disabled=false;basicLoginButton.disabled=false}
+      });
+    }
     loginButton.addEventListener('click',async()=>{
       loginButton.disabled=true;
+      basicLoginButton.disabled=true;
       try{await cloudController.login()}catch(err){
-        showLoginGate('Prijava ni uspela. Preveri, ali je domena dovoljena v Firebase Authentication.');
-      }finally{loginButton.disabled=false}
+        console.warn('NajinDan: Google prijava ni uspela',err);
+        showLoginGate(unified
+          ? 'Združene prijave ni bilo mogoče dokončati. Poskusi »Prijava brez fotografij« ali preveri dovoljenja.'
+          : 'Prijava ni uspela. Preveri, ali je domena dovoljena v Firebase Authentication.');
+      }finally{loginButton.disabled=false;basicLoginButton.disabled=false}
     });
   }catch(err){
     showLoginGate('Povezave s Firebase ni bilo mogoče vzpostaviti. Osveži stran ali preveri nastavitve.');

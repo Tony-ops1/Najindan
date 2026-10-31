@@ -15,6 +15,10 @@ Spletna aplikacija za načrtovanje poroke v slovenščini. Deluje v brskalniku t
 - Izvoz in uvoz podatkov v JSON
 - **Fotografije:** zasebna galerija na uporabnikovem Google Drive (po ločenem dovoljenju)
 
+## Vstop brez prijave
+
+Na začetnem zaslonu sta **Prijava z Googlom** (oblak, sinhronizacija in možnost Google Drive) ter **Vstop brez prijave** (lokalno načrtovanje). V gostujočem načinu delujejo kategorije, zapiski, opravila, gostje, sedežni red, proračun, ponudniki in časovnica. Podatki se shranjujejo samo v `localStorage` trenutnega brskalnika, zato se ne sinhronizirajo z drugimi napravami in se lahko izgubijo ob brisanju podatkov brskalnika. Fotografije v Google Drive zahtevajo Google prijavo. Gost lahko pozneje klikne **Prijava** v glavi aplikacije, ne da bi izbrisal lokalni načrt. **Lokalnih podatkov ne prepisujemo samodejno v Google račun** – za varen prenos naj gost prej uporabi **Nastavitve → Izvozi podatke (JSON)** in po prijavi **Uvozi podatke**.
+
 ## Google Drive fotografije
 
 ### Ena prijava za Firebase in Google Drive (pripravljeno; še ni aktivirano)
@@ -47,7 +51,7 @@ Za objavo prek GitHub Pages: v repozitoriju izberite **Settings → Pages → De
 
 Repozitorij je **javen**. V kodo niso vključeni osebni podatki iz poročnega zvezka (imena gostov, osebni kontakti ali podrobnosti poroke).
 
-Podatki, vneseni v aplikacijo, se shranjujejo **lokalno v brskalniku** (`localStorage`). Med napravami se ne sinhronizirajo. Shranjeni podatki v lokalni različici aplikacije se na novo spletno domeno ne prenesejo samodejno.
+V načinu **Vstop brez prijave** se podatki shranjujejo **lokalno v brskalniku** (`localStorage`) in se ne sinhronizirajo med napravami. Pri **Prijavi z Googlom** se načrt shranjuje v zasebni dokument Firebase Firestore. Gostujoči in oblačni načrt sta ločena; podatkov med njima ne prenašamo samodejno.
 
 Za prenos iz prejšnje različice:
 1. Odprite prejšnjo aplikacijo v istem brskalniku in izberite **Nastavitve → Izvozi varnostno kopijo**.

@@ -250,7 +250,10 @@
         },
         error_callback: () => fail('Googlovo prijavno okno ni bilo dokončano.')
       });
-      try { client.requestAccessToken({ prompt: 'consent' }); }
+      // A remembered consent flag contains no token or personal account data.
+      let previouslyApproved = false;
+      try { previouslyApproved = localStorage.getItem('najindan-drive-previous-consent') === '1'; } catch (_) {}
+      try { client.requestAccessToken({ prompt: previouslyApproved ? '' : 'consent' }); }
       catch (_) { fail('Googlove prijave ni mogoče odpreti.'); }
     });
   }
@@ -268,6 +271,7 @@
     }
     // Never persist short-lived Google access tokens in localStorage or Firestore.
     if (user && user.uid !== signedInUser.uid) signOut();
+    try { localStorage.setItem('najindan-drive-previous-consent', '1'); } catch (_) {}
     token = response.access_token;
     validUntil = Date.now() + Math.max(60, Number(response.expires_in) || 3600) * 1000;
     folderId = ''; photos = []; nextPage = '';

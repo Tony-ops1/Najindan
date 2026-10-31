@@ -7,11 +7,13 @@
   const BASE = 'https://www.googleapis.com/drive/v3/files';
   let root = null, user = null, token = '', validUntil = 0, folderId = '';
   let photos = [], nextPage = '', status = '', busy = false, generation = 0;
+  let category = null; // Only the selected wedding category, never shared between accounts.
   const previews = new Map();
   const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, c => ({
     '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
   })[c]);
   const ready = () => Boolean(token && Date.now() < validUntil - 30000);
+  const quoteQuery = value => String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
   const active = gen => gen === generation && root && root.isConnected;
   const formatSize = size => size ? (Number(size) / 1024 / 1024).toFixed(1) + ' MB' : '';
   const closePreviews = () => { previews.forEach(url => URL.revokeObjectURL(url)); previews.clear(); };
@@ -23,8 +25,8 @@
     if (!root || !root.isConnected) return;
     const connected = ready();
     let html = '<section class="nd-gallery">';
-    html += '<div class="nd-gallery-intro"><h2>Vajine fotografije</h2>';
-    html += '<p>Slike se shranjujejo v zasebno mapo na tvojem Google Drive, ne v Firebase ali Supabase. Vsak Google račun uporablja svoj prostor.</p></div>';
+    html += '<div class="nd-gallery-intro">' + (category ? '<h3>Fotografije – ' + esc(category.name) + '</h3>' : '<h2>Vajine fotografije</h2>');
+    html += '<p>' + (category ? 'Dodaj fotografije za to kategorijo. Posnetki in slike se shranijo na tvoj Google Drive, ločeno označeni za to kategorijo.' : 'Slike se shranjujejo v zasebno mapo na tvojem Google Drive, ne v Firebase ali Supabase. Vsak Google račun uporablja svoj prostor.') + '</p></div>';
     if (!user) {
       html += '<div class="card card-pad">Za dostop do fotografij se najprej prijavi z Googlom v NajinDan.</div>';
     } else if (!connected) {
@@ -33,11 +35,13 @@
       html += '<button class="btn" type="button" data-dg-connect ' + (busy ? 'disabled' : '') + '>Poveži moj Google Drive</button>';
       html += '<p class="nd-gallery-hint">Dovoljenje velja samo za datoteke, ustvarjene ali odprte prek aplikacije. Ni dostopa do vseh datotek v tvojem Drive.</p></div>';
     } else {
-      html += '<div class="nd-gallery-tools"><label class="btn nd-upload-label" for="nd-drive-files">+ Dodaj fotografije</label>';
+      html += '<div class="nd-gallery-tools"><label class="btn nd-upload-label" for="nd-drive-files">Izberi iz galerije</label>';
       html += '<input id="nd-drive-files" class="nd-file" type="file" accept="image/*" multiple ' + (busy ? 'disabled' : '') + '>';
+      html += '<label class="btn secondary nd-upload-label" for="nd-drive-camera">Fotografiraj</label>';
+      html += '<input id="nd-drive-camera" class="nd-file" type="file" accept="image/*" capture="environment" ' + (busy ? 'disabled' : '') + '>';
       html += '<button type="button" class="btn secondary" data-dg-refresh ' + (busy ? 'disabled' : '') + '>Osveži</button>';
       html += '<button type="button" class="btn ghost" data-dg-disconnect>Odklopi Drive</button></div>';
-      html += '<p class="nd-gallery-hint">Fotografije pred nalaganjem zmanjšamo na največ 1800 px (JPEG), da prihranimo prostor. Izvirnikov ne zamenjamo. Največ 10 slik naenkrat.</p>';
+      html += '<p class="nd-gallery-hint">Izberi obstoječe slike ali na telefonu fotografiraj s kamero. Fotografije pred nalaganjem zmanjšamo na največ 1800 px (JPEG). Izvirnikov ne zamenjamo. Največ 10 slik naenkrat.</p>';
       if (folderId) html += '<p><a href="https://drive.google.com/drive/u/0/folders/' + encodeURIComponent(folderId) + '" target="_blank" rel="noopener noreferrer">Odpri mapo NajinDan v Google Drive</a></p>';
       if (photos.length) {
         html += '<div class="nd-photo-grid">';
@@ -89,7 +93,7 @@
   }
   async function list(query, page, count) {
     const params = new URLSearchParams({
-      q: query, fields: 'nextPageToken,files(id,name,mimeType,size,createdTime)',
+      q: query, fields: 'nextPageToken,files(id,name,mimeType,size,createdTime,appProperties)',
       pageSize: String(count || 50), orderBy: 'createdTime desc'
     });
     if (page) params.set('pageToken', page);
@@ -147,7 +151,8 @@
     try {
       await ensureFolder();
       if (!active(gen)) return;
-      const q = "'" + folderId.replace(/'/g, "\\'") + "' in parents and trashed = false";
+      const q = "'" + quoteQuery(folderId) + "' in parents and trashed = false" +
+        (category ? " and appProperties has { key='najindanCategoryId' and value='" + quoteQuery(category.id) + "' }" : '');
       const result = await list(q, nextPage, 24);
       if (!active(gen)) return;
       photos = photos.concat((result.files || []).filter(x => x.mimeType && x.mimeType.startsWith('image/')));
@@ -176,10 +181,11 @@
       return blob;
     } finally { image.close(); }
   }
-  async function uploadOne(file) {
+  async function uploadOne(file, categoryId) {
     const image = await compress(file);
     const filename = file.name.replace(/\.[^.]+$/, '').slice(0, 100) + '.jpg';
     const metadata = { name: filename, mimeType: 'image/jpeg', parents: [folderId] };
+    if (categoryId) metadata.appProperties = { najindanCategoryId: categoryId };
     const boundary = 'najindan-' + Math.random().toString(36).slice(2);
     const body = new Blob([
       '--' + boundary + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n',
@@ -193,13 +199,14 @@
   async function upload(files) {
     if (!ready() || busy) return;
     if (files.length > 10) { status = 'Izberi največ 10 fotografij naenkrat.'; paint(); return; }
+    const uploadCategoryId = category ? category.id : ''; // Keep the correct category even if the view changes.
     busy = true;
     try {
       await ensureFolder();
       for (let i = 0; i < files.length; i++) {
         status = 'Nalagam fotografijo ' + (i + 1) + ' od ' + files.length + ' …';
         paint();
-        await uploadOne(files[i]);
+        await uploadOne(files[i], uploadCategoryId);
       }
       busy = false;
       await load(true);
@@ -255,12 +262,15 @@
   function signOut() {
     generation++; closePreviews();
     token = ''; validUntil = 0; folderId = ''; photos = []; nextPage = '';
-    user = null; root = null; busy = false; status = '';
+    user = null; root = null; category = null; busy = false; status = '';
   }
-  function unmount() { generation++; closePreviews(); root = null; busy = false; }
-  function mount(el, signedInUser) {
+  function unmount() { generation++; closePreviews(); root = null; category = null; busy = false; }
+  function mount(el, signedInUser, options = {}) {
     if (!el) return;
     if (user && user.uid !== signedInUser.uid) signOut();
+    category = options.category && typeof options.category.id === 'string'
+      ? { id: options.category.id, name: String(options.category.name || 'Kategorija') }
+      : null;
     user = signedInUser; root = el; status = '';
     root.onclick = event => {
       const button = event.target.closest('button');
@@ -276,7 +286,7 @@
       );
     };
     root.onchange = event => {
-      if (event.target.matches('#nd-drive-files')) {
+      if (event.target.matches('#nd-drive-files, #nd-drive-camera')) {
         const files = Array.from(event.target.files || []);
         if (files.length) upload(files);
       }

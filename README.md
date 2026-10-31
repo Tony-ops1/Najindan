@@ -12,6 +12,15 @@ Spletna aplikacija za načrtovanje poroke v slovenščini. Deluje v brskalniku t
 - Ponudniki in ponudbe
 - Časovnica poročnega dne
 - Izvoz in uvoz podatkov v JSON
+- **Fotografije:** zasebna galerija na uporabnikovem Google Drive (po ločenem dovoljenju)
+
+## Google Drive fotografije
+
+Galerija **Fotografije** se prikaže po prijavi z Googlom. Ob prvem kliku **Poveži moj Google Drive** aplikacija zahteva Google dovoljenje `drive.file` in preveri, da je Drive račun isti kot pri prijavi v Firebase. Nato ustvari zasebno mapo **NajinDan – Moja poroka**, v kateri hrani fotografije. Slike se pred nalaganjem lokalno pretvorijo v JPEG in zmanjšajo na največ 1800 px; izvirniki v uporabnikovi napravi ostanejo nespremenjeni. Brisanje v galeriji premakne fotografijo v koš Google Drive.
+
+Google Drive OAuth nastavitve so v ločenem Google Cloud projektu **My First Project**, OAuth odjemalec **NajinDan Drive**. Pred javno uporabo prestavi Google OAuth zaslon iz *Testing* v *Production* in preveri pogoje objave. Med testiranjem lahko Drive povežejo samo dodani testni uporabniki. Access token se ne shranjuje v `localStorage`; po poteku ali osvežitvi strani mora uporabnik znova povezati Google Drive. Za delovanje mora biti na Google Cloud projektu omogočen **Google Drive API** ter obseg `https://www.googleapis.com/auth/drive.file`.
+
+Google Drive je ločen od Firestore: seznam slik se bere neposredno z uporabnikovega Drive. Uporabnikov brezplačni prostor (običajno do 15 GB skupaj za Drive, Gmail in Google Foto) in brezplačna API kvota nista neomejena.
 
 ## Zagon
 

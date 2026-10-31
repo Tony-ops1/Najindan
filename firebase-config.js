@@ -10,5 +10,9 @@ window.NAJINDAN_FIREBASE_CONFIG = {
   storageBucket: "najindan-cf5d1.firebasestorage.app",
   messagingSenderId: "471769015922",
   appId: "1:471769015922:web:1d283496f050455d4d04eb",
-  measurementId: "G-2PHV2MX6Z4"
+  measurementId: "G-2PHV2MX6Z4",
+  // Enable ONLY after: Google Drive OAuth app is In production, and its Client ID
+  // is safelisted in Firebase Authentication > Google > external client IDs.
+  // While false, the existing Google login remains completely unchanged.
+  unifiedGoogleDriveLogin: false
 };

@@ -148,7 +148,7 @@
       await ensureFolder();
       if (!active(gen)) return;
       const q = "'" + folderId.replace(/'/g, "\\'") + "' in parents and trashed = false";
-      const result = await list(q, nextPage, 48);
+      const result = await list(q, nextPage, 24);
       if (!active(gen)) return;
       photos = photos.concat((result.files || []).filter(x => x.mimeType && x.mimeType.startsWith('image/')));
       nextPage = result.nextPageToken || '';

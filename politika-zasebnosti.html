@@ -8,13 +8,14 @@
 <h2>Za kaj jih uporabljamo?</h2>
 <p>Podatki omogočajo prijavo, shranjevanje in prikaz osebnega poročnega načrta ter uporabo funkcij, ki jih izbereš. Uporaba Google Drive je ločena in neobvezna: pred povezavo moraš posebej dovoliti dostop.</p>
 <h2>Kje se shranjujejo podatki?</h2>
+<p>Če izbereš »Vstop brez prijave«, se podatki poročnega načrta hranijo v lokalni shrambi (localStorage) tega brskalnika, ne v tvojem dokumentu Firebase Firestore. Podatki se ne sinhronizirajo in se lahko izgubijo ob brisanju podatkov brskalnika ali menjavi naprave. Gostujoči in oblačni načrt se ne preneseta drug v drugega samodejno; za prenos uporabi izvoz in uvoz JSON.</p>
 <ul><li><strong>Firebase Authentication in Firestore (Google)</strong> omogočata prijavo in shranjevanje osebnega poročnega načrta. Dostop do posameznega načrta omejujejo pravila Firestore glede na prijavljeni račun.</li>
 <li><strong>Google Drive (Google)</strong> hrani fotografije v zasebni mapi na uporabnikovem računu. Aplikacija uporablja dovoljenje <code>drive.file</code>, ki je omejeno na datoteke, ustvarjene ali odprte prek aplikacije. Za prikaz fotografij dostopa do datotek, ki jih uporabnik poveže z njo.</li>
 <li><strong>GitHub Pages</strong> gosti javne datoteke spletne aplikacije. Tehnični podatki o obisku se lahko obdelujejo v skladu s pravili ponudnikov gostovanja.</li></ul>
 <h2>Google podatki in dostopni žetoni</h2>
 <p>Podatki, pridobljeni prek Googlovih API-jev, se uporabljajo za funkcije prijave in prikaza oziroma upravljanja fotografij. Ne uporabljajo se za oglasno ciljanje ali prodajo podatkov. Dostopni žeton za Drive se uporablja samo med sejo v pomnilniku brskalnika in se ne shranjuje v trajno lokalno shrambo ali Firestore. Dovoljenje lahko prekličeš v <a href="https://myaccount.google.com/permissions">nastavitvah Google računa</a>.</p>
 <h2>Hranjenje in izbris</h2>
-<p>Odjava iz aplikacije ne izbriše shranjenega načrta. Za zahtevo za izbris podatkov načrta piši na navedeni kontaktni naslov. Fotografije lahko v aplikaciji premakneš v koš ali jih izbrišeš neposredno v svojem Google Drive. Preklic dovoljenja za Drive ne izbriše fotografij samodejno.</p>
+<p>V načinu brez prijave lahko lokalne podatke odstraniš z brisanjem shrambe spletnega mesta v svojem brskalniku. Odjava iz aplikacije ne izbriše shranjenega načrta. Za zahtevo za izbris podatkov načrta piši na navedeni kontaktni naslov. Fotografije lahko v aplikaciji premakneš v koš ali jih izbrišeš neposredno v svojem Google Drive. Preklic dovoljenja za Drive ne izbriše fotografij samodejno.</p>
 <h2>Zasebnost drugih oseb in varnost</h2>
 <p>Vnašaj samo podatke, ki jih smeš uporabljati, zlasti pri seznamih gostov in kontaktih drugih oseb. Spletna stran uporablja HTTPS in Google prijavo. Podatkov ne objavljaj javno in svoje prijave ne deli z drugimi.</p>
 <h2>Spremembe in tvoje pravice</h2>

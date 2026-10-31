@@ -227,7 +227,7 @@
     const expectedId = (originalUser.providerData || []).find(x => x.providerId === 'google.com')?.uid;
     if (!expectedId) { status = 'Za Drive mora biti NajinDan prijavljen z Google računom.'; paint(); return; }
     busy = true; status = 'Čakam Googlovo dovoljenje …'; paint();
-    const client = google.accounts.oauth2.initTokenClient({
+    const client = window.google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID, scope: SCOPES, hint: originalUser.email || undefined,
       callback: async result => {
         if (user !== originalUser) return;

@@ -81,6 +81,7 @@ body.auth-locked .shell{display:none!important}
 .auth-card p{color:#746a69;font-size:14px;line-height:1.6}
 .auth-login{width:100%;justify-content:center;display:flex!important;gap:10px;align-items:center;margin-top:24px;min-height:48px}
 .auth-login + .auth-login{margin-top:10px}#driveWelcomeStatus{margin-top:10px;line-height:1.5}
+#googleLoginWithoutDrive[hidden]{display:none!important}
 .auth-status{font-size:12px!important;margin-top:15px;min-height:20px;color:#876b71!important}
 .auth-privacy{font-size:11px!important;color:#998b89!important;margin-top:24px!important}
 .auth-user-pill{max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:#85777b}
@@ -228,15 +229,17 @@ async function startUserSignIn(){
         setCloudStatus('✓ Podatki so naloženi iz oblaka.');
         // If the user used the new welcome-screen Drive button, adopt its short-
         // lived grant only after confirming that it belongs to this Firebase user.
-        window.NAJINDAN_DRIVE_GALLERY?.adoptPendingLoginToken(user)
-          .then(connected=>{
-            if(connected&&currentAccount?.uid===user.uid)
-              notify('✓ Google Drive je povezan z računom NajinDan.');
-          })
-          .catch(err=>{
-            if(currentAccount?.uid===user.uid)
-              notify('Google Drive ni povezan: '+(err?.message||'Preveri račun.'));
-          });
+        if(window.NAJINDAN_DRIVE_GALLERY?.adoptPendingLoginToken){
+          window.NAJINDAN_DRIVE_GALLERY.adoptPendingLoginToken(user)
+            .then(connected=>{
+              if(connected&&currentAccount?.uid===user.uid)
+                notify('✓ Google Drive je povezan z računom NajinDan.');
+            })
+            .catch(err=>{
+              if(currentAccount?.uid===user.uid)
+                notify('Google Drive ni povezan: '+(err?.message||'Preveri račun.'));
+            });
+        }
         // Posodobi shranjeno shemo pri obstoječem računu po potrebi.
         if(plan&&JSON.stringify(plan)!==JSON.stringify(data))queueCloudSave();
       }

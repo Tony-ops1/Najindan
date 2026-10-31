@@ -219,7 +219,7 @@
   }
   function connect() {
     if (busy || !user) return;
-    if (!window.google || !google.accounts || !google.accounts.oauth2) {
+    if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
       status = 'Google prijavna knjižnica se še nalaga. Osveži stran in poskusi znova.';
       paint(); return;
     }

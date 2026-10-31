@@ -25,3 +25,11 @@
 .nd-photo-actions button:disabled{opacity:.55;cursor:default}
 .nd-more{margin:15px auto 25px;display:block}
 @media(max-width:600px){.nd-photo-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.nd-photo-info{padding:8px}.nd-photo-actions{gap:4px}.nd-gallery-tools{align-items:stretch}.nd-gallery-tools .btn,.nd-upload-label{min-height:42px}}
+/* Gallery embedded in each wedding category. */
+.nd-inline-gallery{margin:16px 0 20px;background:#fffdfa}
+.nd-inline-gallery .nd-gallery{max-width:none;margin:0}
+.nd-inline-gallery .nd-gallery-intro h3{font:600 clamp(19px,2vw,24px)/1.25 Georgia,serif;color:#67444c;margin:0 0 8px}
+.nd-inline-gallery .nd-drive-connect{max-width:none;border:1px solid #eee2dc;box-shadow:none}
+.nd-inline-gallery .nd-photo-grid{grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px}
+.nd-inline-gallery .nd-gallery-intro p{font-size:14px}
+@media(max-width:600px){.nd-inline-gallery{padding:14px!important}.nd-inline-gallery .nd-photo-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.nd-gallery-tools .nd-upload-label{flex:1;min-width:125px;text-align:center}}

@@ -6,6 +6,7 @@ Spletna aplikacija za načrtovanje poroke v slovenščini. Deluje v brskalniku t
 
 - Pregled poroke, datum in opravljene naloge
 - Prilagodljivi zaznamki in kategorije (dodaj, preimenuj, razvrsti; pri ustvarjanju in urejanju kategorij je na voljo vizualna izbira 138 ikon, razdeljenih v 9 poročnih skupin)
+- Dve privzeti kategoriji oblek za poročni priči: **👨 Obleka za pričo – fant** in **👩 Obleka za pričo – punca**. Pri že ustvarjenih načrtih se dodata brez spreminjanja obstoječih zapisov.
 - Seznam gostov in potrditve udeležbe
 - **Sedežni red:** dodaj mize, določi število sedežev, razporedi goste, premikaj med mizami
 - Proračun, stroški in plačila

@@ -1,0 +1,27 @@
+.nd-gallery{max-width:1150px;margin:0 auto 28px}
+.nd-gallery-intro{margin:3px 0 19px}
+.nd-gallery-intro h2{font:600 clamp(24px,3vw,32px)/1.2 Georgia,serif;color:#67444c;margin:0 0 8px}
+.nd-gallery-intro p,.nd-gallery-hint{color:#746a69;line-height:1.6}
+.nd-drive-connect{max-width:660px}
+.nd-drive-connect h3{margin:0 0 10px;font-size:20px}
+.nd-drive-connect p{margin-bottom:15px}
+.nd-gallery-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.nd-gallery-tools .btn{cursor:pointer}
+.nd-file{position:absolute!important;left:-9999px;width:1px;height:1px;opacity:0}
+.nd-upload-label{display:inline-flex;align-items:center;justify-content:center}
+.nd-gallery-hint{font-size:13px;max-width:760px;margin:10px 0 16px}
+.nd-gallery-status{padding:11px 14px;background:#fff7e9;border:1px solid #efdac0;border-radius:12px;color:#70553c;font-size:14px;margin:20px 0}
+.nd-gallery-empty{margin-top:20px;text-align:center;color:#796d6d}
+.nd-photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:16px;margin:20px 0}
+.nd-photo-card{border:1px solid #eadeda;background:#fffdfa;border-radius:16px;overflow:hidden;box-shadow:0 7px 22px rgba(80,48,59,.07)}
+.nd-photo-preview{aspect-ratio:4/3;background:#f5efee;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.nd-photo-preview:before{content:'♡';color:#cba9ac;font-size:40px;position:absolute}
+.nd-photo-preview img{width:100%;height:100%;object-fit:cover;position:relative;z-index:1}
+.nd-photo-info{padding:10px 11px 12px;display:grid;gap:5px}
+.nd-photo-info strong{font-size:13px;color:#56404a;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+.nd-photo-info small{font-size:11px;color:#8a777b}
+.nd-photo-actions{display:flex;align-items:center;justify-content:space-between;margin-top:4px;gap:8px}
+.nd-photo-actions button{font:inherit;font-size:12px;background:none;border:0;color:#965262;cursor:pointer;text-decoration:underline;padding:6px 0}
+.nd-photo-actions button:disabled{opacity:.55;cursor:default}
+.nd-more{margin:15px auto 25px;display:block}
+@media(max-width:600px){.nd-photo-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.nd-photo-info{padding:8px}.nd-photo-actions{gap:4px}.nd-gallery-tools{align-items:stretch}.nd-gallery-tools .btn,.nd-upload-label{min-height:42px}}

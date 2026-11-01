@@ -79,13 +79,14 @@ export function startCoupleSharing({db,auth,onLogin,onRemotePlan,onStatus,onErro
     const plan=snap.exists()?snap.data().plan:null;
     const writer=async(edited,baseline)=>{
       if(auth.currentUser?.uid!==uid||ref!==wedding)return;
-      await runTransaction(db,async tx=>{
+      return runTransaction(db,async tx=>{
         const latest=await tx.get(wedding);
         if(!latest.exists()&&owner!==uid)throw Error('Skupni načrt še ni ustvarjen.');
         const next=latest.exists()
           ?mergePlanChanges(baseline,edited,latest.data().plan)
           :copy(edited);
         tx.set(wedding,{plan:next,updatedAt:serverTimestamp()});
+        return next;
       });
     };
     await onLogin(user,plan,writer,{role:owner===uid?'owner':'partner',ownerUid:owner});
@@ -155,7 +156,14 @@ export function startCoupleSharing({db,auth,onLogin,onRemotePlan,onStatus,onErro
   async function removeMember(uid){
     const user=signedIn();
     if(ownerUid!==user.uid)throw Error('To lahko naredi samo lastnik poroke.');
-    await deleteDoc(userRef(user.uid,'members',uid));
+    const member=userRef(user.uid,'members',uid);
+    const info=await getDocFromServer(member);
+    if(!info.exists())return;
+    const batch=writeBatch(db);
+    batch.delete(member);
+    // Revoke the original invitation too, so its link cannot restore access.
+    if(info.data().inviteId)batch.delete(userRef(user.uid,'invites',info.data().inviteId));
+    await batch.commit();
   }
   async function leave(){
     const user=signedIn();

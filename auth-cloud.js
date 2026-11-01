@@ -2,9 +2,10 @@
 // Povezava zahteva nastavljeno firebase-config.js in pravila firestore.rules.
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCredential, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js';
-import { getFirestore, doc, getDocFromServer, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
+import { getFirestore } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
+import { startCoupleSharing } from './couple-share.js';
 
-export function startAuth({ config, onLogin, onLogout, onError, onStatus }) {
+export function startAuth({ config, onLogin, onLogout, onError, onStatus, onRemotePlan }) {
   const app = initializeApp(config);
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -12,22 +13,17 @@ export function startAuth({ config, onLogin, onLogout, onError, onStatus }) {
   auth.languageCode = 'sl';
   let generation = 0;
 
+  const sharing = startCoupleSharing({ db, auth, onLogin, onRemotePlan, onStatus, onError });
   onAuthStateChanged(auth, async (user) => {
     const current = ++generation;
     if (!user) {
+      sharing.stop();
       onLogout();
       return;
     }
     onStatus('Varno nalagam vajino poroko iz oblaka …');
-    const ref = doc(db, 'users', user.uid, 'weddings', 'main');
     try {
-      const snapshot = await getDocFromServer(ref);
-      if (current !== generation || auth.currentUser?.uid !== user.uid) return;
-      const plan = snapshot.exists() ? snapshot.data().plan : null;
-      await onLogin(user, plan, async updatedPlan => {
-        // Strežnik zahteva prijavo in preveri uporabnikov UID v Firestore pravilih.
-        await setDoc(ref, { plan: updatedPlan, updatedAt: serverTimestamp() });
-      });
+      await sharing.open(user);
     } catch (error) {
       if (current === generation) onError(error);
     }
@@ -57,6 +53,7 @@ export function startAuth({ config, onLogin, onLogout, onError, onStatus }) {
   return {
     login,
     loginWithoutDrive: () => signInWithPopup(auth, provider),
-    logout: () => signOut(auth)
+    logout: () => signOut(auth),
+    sharing
   };
 }

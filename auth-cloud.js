@@ -5,7 +5,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCredential, sig
 import { getFirestore } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js';
 import { startCoupleSharing } from './couple-share.js';
 
-export function startAuth({ config, onLogin, onLogout, onError, onStatus, onRemotePlan }) {
+export function startAuth({ config, onLogin, onLogout, onError, onStatus, onRemotePlan, onSyncError }) {
   const app = initializeApp(config);
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -13,7 +13,7 @@ export function startAuth({ config, onLogin, onLogout, onError, onStatus, onRemo
   auth.languageCode = 'sl';
   let generation = 0;
 
-  const sharing = startCoupleSharing({ db, auth, onLogin, onRemotePlan, onStatus, onError });
+  const sharing = startCoupleSharing({ db, auth, onLogin, onRemotePlan, onStatus, onError, onSyncError });
   onAuthStateChanged(auth, async (user) => {
     const current = ++generation;
     if (!user) {

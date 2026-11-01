@@ -271,6 +271,7 @@ async function startUserSignIn(){
         showLoginGate('Prijavi se s svojim Google računom ali izberi vstop brez prijave.');
       },
       onRemotePlan:updateRemoteSharedPlan,
+      onSyncError:error=>{setCloudStatus('⚠ Povezava s skupnim načrtom je prekinjena. Poskusi osvežiti stran.');console.error('NajinDan: sinhronizacija',error)},
       onLogin:async(user,plan,writer,meta)=>{
         if(guestMode){
           // An old Firebase session may restore after the visitor has chosen guest mode.

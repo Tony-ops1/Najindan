@@ -14,5 +14,8 @@ window.NAJINDAN_FIREBASE_CONFIG = {
   // Enable ONLY after: Google Drive OAuth app is In production, and its Client ID
   // is safelisted in Firebase Authentication > Google > external client IDs.
   // While false, the existing Google login remains completely unchanged.
-  unifiedGoogleDriveLogin: false
+  unifiedGoogleDriveLogin: false,
+  // Enable shared wedding only AFTER publishing and testing the new Firestore
+  // security rules. Until then, keep ordinary Google login fully independent.
+  coupleSharingEnabled: false
 };

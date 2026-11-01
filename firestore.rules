@@ -1,15 +1,85 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // V vsakem računu so podatki o poroki zasebni; drugi uporabniki nimajo dostopa.
-    match /users/{userId}/weddings/{weddingId} {
-      allow read: if request.auth != null
-        && request.auth.uid == userId && weddingId == 'main';
-      allow create, update: if request.auth != null
-        && request.auth.uid == userId && weddingId == 'main'
-        && request.resource.data.keys().hasOnly(['plan', 'updatedAt'])
+    function loggedIn() {
+      return request.auth != null;
+    }
+    function owner(userId) {
+      return loggedIn() && request.auth.uid == userId;
+    }
+    function verifiedEmail() {
+      return loggedIn() && request.auth.token.email_verified == true
+        && request.auth.token.email is string;
+    }
+    function memberOf(userId) {
+      return loggedIn()
+        && exists(/databases/$(database)/documents/users/$(userId)/members/$(request.auth.uid));
+    }
+    function weddingShape() {
+      return request.resource.data.keys().hasOnly(['plan', 'updatedAt'])
         && request.resource.data.plan is map;
+    }
+
+    // The owner's existing wedding remains the shared source of truth.
+    // Only the owner creates it; a verified invited member may read/update it.
+    match /users/{userId}/weddings/{weddingId} {
+      allow get: if weddingId == 'main' && (owner(userId) || memberOf(userId));
+      allow list: if false;
+      allow create: if weddingId == 'main' && owner(userId) && weddingShape();
+      allow update: if weddingId == 'main' && weddingShape()
+        && (owner(userId) || memberOf(userId));
       allow delete: if false;
+    }
+
+    // A random, unguessable ID plus the invited person's verified email.
+    match /users/{userId}/invites/{inviteId} {
+      allow get: if owner(userId) ||
+        (verifiedEmail() && request.auth.token.email.lower() == resource.data.email);
+      allow list: if owner(userId);
+      allow create: if owner(userId)
+        && inviteId.matches('[a-f0-9]{48}')
+        && request.resource.data.keys().hasOnly(['email', 'createdAt', 'expiresAt'])
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 254
+        && request.resource.data.email.matches('[^ ]+@[^ ]+[.][^ ]+')
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.expiresAt is timestamp
+        && request.resource.data.expiresAt > request.time
+        && request.resource.data.expiresAt <= request.time + duration.value(7, 'd');
+      allow update: if false;
+      allow delete: if owner(userId);
+    }
+
+    // Membership can be claimed ONLY by the invited account, with an unexpired
+    // invite addressed to that user's verified email. Owners can revoke it.
+    match /users/{userId}/members/{memberId} {
+      allow get: if owner(userId) || (loggedIn() && request.auth.uid == memberId);
+      allow list: if owner(userId);
+      allow create: if verifiedEmail()
+        && request.auth.uid == memberId && userId != memberId
+        && request.resource.data.keys().hasOnly(['email', 'inviteId', 'joinedAt'])
+        && request.resource.data.email == request.auth.token.email.lower()
+        && request.resource.data.inviteId is string
+        && request.resource.data.joinedAt == request.time
+        && exists(/databases/$(database)/documents/users/$(userId)/invites/$(request.resource.data.inviteId))
+        && get(/databases/$(database)/documents/users/$(userId)/invites/$(request.resource.data.inviteId)).data.email == request.resource.data.email
+        && get(/databases/$(database)/documents/users/$(userId)/invites/$(request.resource.data.inviteId)).data.expiresAt > request.time;
+      allow update: if false;
+      allow delete: if owner(userId) || (loggedIn() && request.auth.uid == memberId);
+    }
+
+    // Pointer is in the PARTNER's own private namespace. In the same atomic
+    // batch as membership creation, getAfter verifies that membership exists.
+    match /users/{userId}/shared/{sharedId} {
+      allow get: if sharedId == 'main' && owner(userId);
+      allow list: if false;
+      allow create, update: if sharedId == 'main' && owner(userId)
+        && request.resource.data.keys().hasOnly(['ownerUid', 'joinedAt'])
+        && request.resource.data.ownerUid is string
+        && request.resource.data.ownerUid != userId
+        && request.resource.data.joinedAt == request.time
+        && getAfter(/databases/$(database)/documents/users/$(request.resource.data.ownerUid)/members/$(userId)).data.email == request.auth.token.email.lower();
+      allow delete: if sharedId == 'main' && owner(userId);
     }
     match /{document=**} {
       allow read, write: if false;

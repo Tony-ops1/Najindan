@@ -18,7 +18,9 @@ export function mergePlanChanges(base, edited, live) {
     const merged=(live||[]).filter(v=>next.has(v.id)||!old.has(v.id))
       .map(v=>next.has(v.id)?mergePlanChanges(old.get(v.id),next.get(v.id),v):v);
     const ids=new Set(merged.map(v=>v.id));
-    for(const v of edited)if(!ids.has(v.id)){merged.push(copy(v));ids.add(v.id)}
+    // Append only truly NEW rows. An unchanged row missing from live was
+    // deleted by the other partner and must not be resurrected.
+    for(const v of edited)if(!ids.has(v.id)&&!old.has(v.id)){merged.push(copy(v));ids.add(v.id)}
     const original=(base||[]).map(v=>v.id);
     const reordered=edited.filter(v=>old.has(v.id)).map(v=>v.id);
     if(!eq(original,reordered)){

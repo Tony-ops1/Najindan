@@ -165,7 +165,7 @@ let data=load(),section='home',filters={tasks:'all',guests:'all',guestSide:'all'
 const cloudMode=Boolean(window.NAJINDAN_FIREBASE_CONFIG?.apiKey&&window.NAJINDAN_FIREBASE_CONFIG?.authDomain&&window.NAJINDAN_FIREBASE_CONFIG?.projectId&&window.NAJINDAN_FIREBASE_CONFIG?.appId);
 let currentAccount=null, remoteWrite=null, cloudController=null, cloudSaveTimer=null, cloudSaveQueue=Promise.resolve(), guestMode=false;
 let cloudStateText='Spremembe so shranjene lokalno.';
-let sharedMeta=null,lastAppliedPlan=null,localRevision=0,savedRevision=0;
+let sharedMeta=null,lastAppliedPlan=null,lastSavedLocalSnapshot=null,localRevision=0,savedRevision=0;
 let partnerMembers=[],inviteResult=null,sharingMessage='';
 function setCloudStatus(message){
   cloudStateText=message;
@@ -175,27 +175,32 @@ function queueCloudSave(){
   if(!cloudMode||!remoteWrite||!currentAccount)return;
   clearTimeout(cloudSaveTimer);
   const snapshot=JSON.parse(JSON.stringify(data));
-  const baseline=lastAppliedPlan?JSON.parse(JSON.stringify(lastAppliedPlan)):null;
   const revision=++localRevision,owner=currentAccount.uid,write=remoteWrite;
+  const sessionOwner=sharedMeta?.ownerUid;
   setCloudStatus('Shranjujem v oblak …');
   cloudSaveTimer=setTimeout(()=>{
     cloudSaveTimer=null;
     cloudSaveQueue=cloudSaveQueue.catch(()=>{}).then(async()=>{
-      if(currentAccount?.uid!==owner)return;
+      if(currentAccount?.uid!==owner||sharedMeta?.ownerUid!==sessionOwner)return;
+      // Rebase against the PREVIOUS SUCCESSFUL write, not the baseline at
+      // click time. E.g. changing 100→200→100 during an in-flight write must
+      // persist the final 100 rather than ignoring the second update.
+      const baseline=lastSavedLocalSnapshot
+        ?JSON.parse(JSON.stringify(lastSavedLocalSnapshot)):null;
       const merged=await write(snapshot,baseline);
-      if(currentAccount?.uid!==owner)return;
+      if(currentAccount?.uid!==owner||sharedMeta?.ownerUid!==sessionOwner||!merged)return;
+      lastSavedLocalSnapshot=JSON.parse(JSON.stringify(snapshot));
+      lastAppliedPlan=JSON.parse(JSON.stringify(merged));
       if(revision===localRevision){
         savedRevision=revision;
-        if(merged){
-          lastAppliedPlan=JSON.parse(JSON.stringify(merged));
-          data=JSON.parse(JSON.stringify(merged));
-          try{localStorage.setItem(SKEY,JSON.stringify(data))}catch(_){}
-          render();
-        }
+        data=JSON.parse(JSON.stringify(merged));
+        lastSavedLocalSnapshot=JSON.parse(JSON.stringify(merged));
+        try{localStorage.setItem(SKEY,JSON.stringify(data))}catch(_){}
+        render();
         setCloudStatus('✓ Shranjeno v oblak.');
       }
     }).catch(err=>{
-      if(currentAccount?.uid===owner){
+      if(currentAccount?.uid===owner&&sharedMeta?.ownerUid===sessionOwner){
         setCloudStatus('⚠ Oblak ni dosegljiv. Lokalna kopija je ohranjena; podatke tudi izvozita.');
         console.error('NajinDan: napaka oblačnega shranjevanja',err);
       }
@@ -208,6 +213,7 @@ function updateRemoteSharedPlan(plan,uid,ownerUid){
   const incoming=JSON.stringify(plan);
   if(incoming===JSON.stringify(lastAppliedPlan))return;
   lastAppliedPlan=JSON.parse(incoming);
+  lastSavedLocalSnapshot=JSON.parse(incoming);
   data={...blank(),...plan,settings:{...blank().settings,...plan.settings}};
   try{localStorage.setItem(SKEY,JSON.stringify(data))}catch(_){}
   setCloudStatus('✓ Spremembe drugega uporabnika so usklajene.');
@@ -225,7 +231,7 @@ function hideLoginGate(){
 function enterGuestMode(){
   // Never allow guest edits to use the Firestore writer of a signed-in user.
   guestMode=true;currentAccount=null;remoteWrite=null;clearTimeout(cloudSaveTimer);
-  sharedMeta=null;lastAppliedPlan=null;localRevision=0;savedRevision=0;partnerMembers=[];inviteResult=null;
+  sharedMeta=null;lastAppliedPlan=null;lastSavedLocalSnapshot=null;localRevision=0;savedRevision=0;partnerMembers=[];inviteResult=null;
   window.NAJINDAN_DRIVE_GALLERY?.signOut();
   SKEY='najindan-v1';
   data=load(); // Existing guest data remain stored separately from every Google account.
@@ -259,7 +265,7 @@ async function startUserSignIn(){
       onLogout:()=>{
         window.NAJINDAN_DRIVE_GALLERY?.signOut();
         currentAccount=null;remoteWrite=null;clearTimeout(cloudSaveTimer);
-        sharedMeta=null;lastAppliedPlan=null;localRevision=0;savedRevision=0;
+        sharedMeta=null;lastAppliedPlan=null;lastSavedLocalSnapshot=null;localRevision=0;savedRevision=0;
         partnerMembers=[];inviteResult=null;sharingMessage='';
         SKEY='najindan-v1';
         if(guestMode){
@@ -289,6 +295,7 @@ async function startUserSignIn(){
           :'najindan-user-'+user.uid+'-v1';
         data=plan?{...blank(),...plan,settings:{...blank().settings,...plan.settings}}:blank();
         lastAppliedPlan=JSON.parse(JSON.stringify(data));
+        lastSavedLocalSnapshot=JSON.parse(JSON.stringify(data));
         localRevision=0;savedRevision=0;partnerMembers=[];inviteResult=null;
         section=new URLSearchParams(location.search).has('invite')?'settings':'home';
         filters.search='';filters.categoryId='nevesta';

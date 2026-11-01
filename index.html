@@ -494,6 +494,63 @@ function deleteItem(type,id){let record=data[type]?.find(x=>x.id===id);if(!recor
 function exportJSON(){let b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(b),a=document.createElement('a');a.href=url;a.download=`najindan-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);notify('Varnostna kopija je pripravljena.');}
 function importJSON(file){if(!file)return;const reader=new FileReader();reader.onload=()=>{try{let d=JSON.parse(String(reader.result));if(!d||!d.settings||!['tasks','guests','expenses','vendors','timeline'].every(k=>Array.isArray(d[k])))throw Error('Manjkajo podatki');if(!confirm('Uvoz bo nadomestil vse trenutne podatke. Nadaljujem?'))return;if(d.photoImportVersion!==1){let oldGuests=d.guests||[],oldVendors=d.vendors||[];d.guests=[...oldGuests,...copyPhoto(PHOTO_DATA.guests).filter(x=>!oldGuests.some(y=>y.id===x.id||y.name===x.name&&y.group===x.group))];d.vendors=[...oldVendors,...copyPhoto(PHOTO_DATA.vendors).filter(x=>!oldVendors.some(y=>y.id===x.id||y.name===x.name))];d.categories=copyPhoto(PHOTO_DATA.categories);d.photoImportVersion=1}data={...blank(),...d,version:4,settings:{...blank().settings,...d.settings}};save();section='home';filters.search='';render();notify('Podatki so uspešno uvoženi.')}catch(err){alert('Datoteka ni veljavna varnostna kopija NajinDan.')}};reader.readAsText(file)}
 document.addEventListener('click',e=>{let t=e.target.closest('[data-sign-in],[data-logout],[data-quick],[data-nav],[data-add],[data-edit],[data-delete],[data-close],[data-filter-tasks],[data-filter-guests],[data-paid],[data-reset],[data-export],[data-import],[data-select-category],[data-move-category],[data-delete-category],[data-delete-bookmark],[data-filter-guest-side],[data-unseat]');if(!t)return;if(t.hasAttribute('data-sign-in')){leaveGuestForSignIn();return}if(t.hasAttribute('data-logout')){if(cloudController){const action=async()=>{clearTimeout(cloudSaveTimer);await cloudSaveQueue;await cloudController.logout()};action().catch(()=>notify('Odjava ni uspela. Poskusi znova.'))}return}if(t.hasAttribute('data-select-category')){filters.categoryId=t.dataset.selectCategory;filters.bookmarkSearch='';render();return}else if(t.hasAttribute('data-move-category')){moveCategory(t.dataset.moveCategory,t.dataset.dir);return}else if(t.hasAttribute('data-delete-category')){deleteCategory(t.dataset.deleteCategory);return}else if(t.hasAttribute('data-delete-bookmark')){deleteBookmark(t.dataset.categoryId,t.dataset.deleteBookmark);return}else if(t.hasAttribute('data-filter-guest-side')){filters.guestSide=t.dataset.filterGuestSide;render();return}else if(t.hasAttribute('data-unseat')){assignGuestToTable(t.dataset.unseat,'');return}if(t.hasAttribute('data-quick')){openQuick(t.dataset.quick);return}if(t.hasAttribute('data-nav')){section=t.dataset.nav;filters.search='';window.scrollTo({top:0,behavior:'instant'});render()}else if(t.hasAttribute('data-add'))openModal(t.dataset.add,null,t.dataset.categoryId||(t.dataset.add==='bookmarks'?filters.categoryId:null));else if(t.hasAttribute('data-edit'))openModal(t.dataset.edit,t.dataset.id,t.dataset.categoryId||filters.categoryId);else if(t.hasAttribute('data-delete'))deleteItem(t.dataset.delete,t.dataset.id);else if(t.hasAttribute('data-close'))closeModal();else if(t.hasAttribute('data-filter-tasks')){filters.tasks=t.dataset.filterTasks;render()}else if(t.hasAttribute('data-filter-guests')){filters.guests=t.dataset.filterGuests;render()}else if(t.hasAttribute('data-paid')){let item=data.expenses.find(x=>x.id===t.dataset.paid);if(item){item.paid=!item.paid;save();render()}}else if(t.hasAttribute('data-export'))exportJSON();else if(t.hasAttribute('data-import'))document.getElementById('importFile').click();else if(t.hasAttribute('data-reset')){if(confirm('Res želiš izbrisati VSE goste, stroške, ponudnike, dogodke in opravila? Nato se bodo obnovili zapiski iz varnostne kopije. Tega ni mogoče razveljaviti.')){data=blank();save();section='home';render();notify('Načrtovalnik je ponastavljen.')}}});
+
+document.addEventListener('submit',async e=>{
+  if(e.target.id!=='coupleInviteForm')return;
+  e.preventDefault();
+  if(!currentAccount||!cloudController?.sharing)return;
+  const submit=e.target.querySelector('[type=submit]');
+  const email=String(new FormData(e.target).get('partnerEmail')||'').trim();
+  if(submit)submit.disabled=true;
+  sharingMessage='Ustvarjam povabilo …';
+  try{
+    inviteResult=await cloudController.sharing.createInvite(email,data);
+    sharingMessage='✓ Povabilo pripravljeno. Kopiraj povezavo ali jo pošlji partnerju.';
+  }catch(error){
+    sharingMessage=error?.message||'Povabila ni bilo mogoče ustvariti.';
+  }finally{
+    if(section==='settings')render();
+  }
+});
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('[data-copy-couple],[data-accept-couple],[data-remove-partner],[data-leave-couple]');
+  if(!t||!currentAccount||!cloudController?.sharing)return;
+  t.disabled=true;
+  try{
+    if(t.hasAttribute('data-copy-couple')){
+      if(!inviteResult?.link)return;
+      if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(inviteResult.link);
+      else{
+        const input=document.getElementById('coupleInviteLink');
+        input?.select();
+        if(!document.execCommand('copy'))throw Error('Označi povezavo in jo kopiraj ročno.');
+      }
+      sharingMessage='✓ Povezava je kopirana.';
+    }else if(t.hasAttribute('data-accept-couple')){
+      const code=inviteCode();
+      if(!code)return;
+      sharingMessage='Povezujem poročni načrt …';
+      await cloudController.sharing.acceptInvite(code);
+      const url=new URL(location.href);url.searchParams.delete('invite');
+      history.replaceState(null,'',url.pathname+url.search+url.hash);
+      sharingMessage='✓ Zdaj uporabljata isti poročni načrt.';
+    }else if(t.hasAttribute('data-remove-partner')){
+      if(!confirm('Partnerju prekličem dostop do skupnega načrta? Njegovi osebni podatki ostanejo nespremenjeni.'))return;
+      await cloudController.sharing.removeMember(t.dataset.removePartner);
+      partnerMembers=[];
+      inviteResult=null;
+      sharingMessage='Partner nima več dostopa do tega načrta.';
+    }else if(t.hasAttribute('data-leave-couple')){
+      if(!confirm('Zapustim skupno poroko? Tvoj osebni načrt bo ostal shranjen.'))return;
+      await cloudController.sharing.leave();
+      sharingMessage='Vrnil si se na svoj osebni poročni načrt.';
+    }
+  }catch(error){
+    sharingMessage=error?.message||'Povezave ni bilo mogoče urediti.';
+  }finally{
+    if(section==='settings')render();
+  }
+});
 document.addEventListener('change',e=>{if(e.target.matches('[data-check]')){let t=data.tasks.find(x=>x.id===e.target.dataset.check);if(t){t.done=e.target.checked;save();render()}}else if(e.target.matches('[data-seat-assign]')){assignGuestToTable(e.target.dataset.seatAssign,e.target.value)}});
 document.addEventListener('input',e=>{if(e.target.matches('[data-search]')){filters.search=e.target.value;render(true)}else if(e.target.matches('[data-bookmark-search]')){filters.bookmarkSearch=e.target.value;let p=e.target.selectionStart;render();let el=document.querySelector('[data-bookmark-search]');if(el){el.focus();el.setSelectionRange(p,p)}}});
 

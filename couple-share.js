@@ -49,7 +49,7 @@ function randomId(){
   const bytes=new Uint8Array(24);crypto.getRandomValues(bytes);
   return [...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
-export function startCoupleSharing({db,auth,onLogin,onRemotePlan,onStatus,onError}){
+export function startCoupleSharing({db,auth,onLogin,onRemotePlan,onStatus,onError,onSyncError}){
   let unlisten=null,ref=null,ownerUid='',userUid='',gen=0;
   const userRef=(uid,...path)=>doc(db,'users',uid,...path);
   const signedIn=()=>{if(!auth.currentUser)throw Error('Najprej se prijavi z Googlom.');return auth.currentUser};
@@ -99,7 +99,8 @@ export function startCoupleSharing({db,auth,onLogin,onRemotePlan,onStatus,onErro
       if(owner!==uid&&denied(e)){
         onStatus('Dostop do skupne poroke je preklican. Nalagam osebni načrt …');
         try{await open(user)}catch(error){onError(error)}
-      }else onError(e);
+      }else if(onSyncError)onSyncError(e);
+      else console.warn('NajinDan: sinhronizacija ni uspela',e);
     });
   }
   async function createInvite(email,plan){

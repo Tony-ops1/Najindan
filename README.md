@@ -15,6 +15,14 @@ Spletna aplikacija za načrtovanje poroke v slovenščini. Deluje v brskalniku t
 - Izvoz in uvoz podatkov v JSON
 - **Fotografije:** zasebna galerija na uporabnikovem Google Drive (po ločenem dovoljenju)
 
+## 💍 Skupna poroka za ženina in nevesto
+
+**Lastnik** se prijavi z Googlom, odpre **Nastavitve → Skupna poroka**, vpiše partnerjev Google e-poštni naslov in izbere **Pripravi povabilo**. Aplikacija ustvari varno povezavo, ki velja **6 dni**. Lastnik jo lahko kopira ali odpre pripravljeno e-pošto (aplikacija e-pošte ne pošlje sama). **Povabljeni** odpre povezavo, se prijavi s *točno tem Google računom*, nato v nastavitvah klikne **Sprejmi povabilo**.
+
+Oseba, ki povabi, obdrži izvorni načrt; oba nato urejata isti dokument `users/{ownerUid}/weddings/main`. Lastni načrt povabljenega **ostane ohranjen** in ga je mogoče znova odpreti po izhodu iz skupne poroke. Spremembe se med obema računoma sinhronizirajo prek Firestore `onSnapshot`; transakcijsko združevanje pomaga preprečiti prepisovanje sprememb različnih polj, gostov in kategorij. Če oba hkrati spremenita **isto polje**, lahko zadnja shranjena sprememba prevlada; ne gre za večuporabniški urejevalnik besedila. Lastnik lahko dostop partnerju prekliče, partner pa lahko zapusti skupni načrt. Povezava z Google Drive fotografijami je **še vedno ločena po uporabniškem računu** in skupne poroke ne deli samodejno.
+
+**Obvezen korak pred dejansko uporabo:** nova datoteka `firestore.rules` v GitHub repozitoriju **ni samodejno objavljena v Firebase**. V projektu `najindan-cf5d1` pojdi na <https://console.firebase.google.com/project/najindan-cf5d1/firestore/rules> in objavi vsebino posodobljene datoteke `firestore.rules` (ali uporabi Firebase CLI: `firebase deploy --only firestore:rules --project najindan-cf5d1`). Dokler to ni storjeno, prijava v osebni načrt deluje, ustvarjanje povabil pa bo javilo, da je dostop zavrnjen. Spremembe pravil preveri s Firebase emulatorjem, zlasti z neavtoriziranimi računi, pred produkcijsko objavo.
+
 ## Vstop brez prijave
 
 Na začetnem zaslonu sta **Prijava z Googlom** (oblak, sinhronizacija in možnost Google Drive) ter **Vstop brez prijave** (lokalno načrtovanje). V gostujočem načinu delujejo kategorije, zapiski, opravila, gostje, sedežni red, proračun, ponudniki in časovnica. Podatki se shranjujejo samo v `localStorage` trenutnega brskalnika, zato se ne sinhronizirajo z drugimi napravami in se lahko izgubijo ob brisanju podatkov brskalnika. Fotografije v Google Drive zahtevajo Google prijavo. Gost lahko pozneje klikne **Prijava** v glavi aplikacije, ne da bi izbrisal lokalni načrt. **Lokalnih podatkov ne prepisujemo samodejno v Google račun** – za varen prenos naj gost prej uporabi **Nastavitve → Izvozi podatke (JSON)** in po prijavi **Uvozi podatke**.
